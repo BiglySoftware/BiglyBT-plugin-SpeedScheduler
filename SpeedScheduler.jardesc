@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<?xml version="1.0" encoding="WINDOWS-1252" standalone="no"?>
 <jardesc>
     <jar path="SpeedScheduler/SpeedScheduler.jar"/>
     <options buildIfNeeded="true" compress="true" descriptionLocation="/SpeedScheduler/SpeedScheduler.jardesc" exportErrors="true" exportWarnings="true" includeDirectoryEntries="false" overwrite="false" saveDescription="true" storeRefactorings="false" useSourceFolders="false"/>
@@ -12,8 +12,6 @@
     </manifest>
     <selectedElements exportClassFiles="true" exportJavaFiles="true" exportOutputFolder="false">
         <javaElement handleIdentifier="=SpeedScheduler/&lt;speedscheduler"/>
-        <file path="/SpeedScheduler/javadoc.sh"/>
-        <file path="/SpeedScheduler/plugin.properties"/>
         <javaElement handleIdentifier="=SpeedScheduler/&lt;speedscheduler.io"/>
     </selectedElements>
 </jardesc>
