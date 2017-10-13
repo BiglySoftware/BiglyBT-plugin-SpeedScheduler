@@ -142,6 +142,15 @@ public class SpeedSchedulerThread extends Thread implements ScheduleChangeListen
 					Log.println( "SpeedScheduler has been disabled by user. Not doing anything.", Log.DEBUG );
 					activeSchedules = new Vector( 0 );
 					notifyScheduleSelectionListeners( activeSchedules );
+					
+					Download[] torrents = pluginInterface.getDownloadManager().getDownloads();
+					for( int i=0; i<torrents.length; i++ ) {
+						Download d = torrents[i];
+						if ( wePausedTorrent(d)) {
+							unPauseTorrent(d);
+						}
+					}
+					
 					continue;
 				}
 
