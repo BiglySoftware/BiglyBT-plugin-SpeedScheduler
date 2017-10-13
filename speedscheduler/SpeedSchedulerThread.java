@@ -308,9 +308,13 @@ public class SpeedSchedulerThread extends Thread implements ScheduleChangeListen
 							pauseTorrent( d );
 						}
 //						Is this a paused download and did we actually pause it?
-						else if( ! d.isComplete() && d.getState() != Download.ST_DOWNLOADING  && ! d.isForceStart() && not_in && wePausedTorrent( d ) )
+						else if( ! d.isComplete() && d.getState() != Download.ST_DOWNLOADING  && ! d.isForceStart() && wePausedTorrent( d ) )
 						{
-							unPauseTorrent( d );
+							if ( not_in ){				
+								unPauseTorrent( d );								
+							}else{								
+								isPausedTorrent( d );
+							}
 						}
 					}
 				} else {
@@ -334,9 +338,13 @@ public class SpeedSchedulerThread extends Thread implements ScheduleChangeListen
 							}
 						}
 						// Is this a paused download and did we actually pause it?
-						if( ! d.isComplete() && d.getState() != Download.ST_DOWNLOADING && ! d.isForceStart() && !in && wePausedTorrent( d ) )
+						if( ! d.isComplete() && d.getState() != Download.ST_DOWNLOADING && ! d.isForceStart() && wePausedTorrent( d ) )
 						{
-							unPauseTorrent( d );
+							if ( !in ){
+								unPauseTorrent( d );
+							}else {
+								isPausedTorrent( d );
+							}
 						}
 						//If it's not complete, it's a download. Pause it it's not already stopped or stopping
 						else if( ! d.isComplete() && d.getState() != Download.ST_STOPPED && d.getState() != Download.ST_STOPPING && ! d.isForceStart() && in )
@@ -370,11 +378,14 @@ public class SpeedSchedulerThread extends Thread implements ScheduleChangeListen
 						}
 //						Is this torrent currently seeding and did we actually pause it?
 						// Note, we don't pause force started torrents.
-						else if( d.isComplete() && d.getState() != Download.ST_SEEDING && ! d.isForceStart() && not_in && wePausedTorrent( d ))
+						else if( d.isComplete() && d.getState() != Download.ST_SEEDING && ! d.isForceStart() && wePausedTorrent( d ))
 						{
-							unPauseTorrent( d );
+							if ( not_in ){
+								unPauseTorrent( d );
+							}else {
+								isPausedTorrent( d );
+							}
 						}
-
 					}
 				} else {
 					// Unpause all seeds that we paused.
@@ -400,9 +411,13 @@ public class SpeedSchedulerThread extends Thread implements ScheduleChangeListen
 
 						// Is this torrent currently seeding and did we actually pause it?
 						// Note, we don't pause force started torrents.
-						if( d.isComplete() && d.getState() != Download.ST_SEEDING && ! d.isForceStart() && !only && wePausedTorrent( d ))
+						if( d.isComplete() && d.getState() != Download.ST_SEEDING && ! d.isForceStart() && wePausedTorrent( d ))
 						{
-							unPauseTorrent( d );
+							if ( !only ){
+								unPauseTorrent( d );
+							}else{
+								isPausedTorrent( d );
+							}
 						}
 //						If it's complete, it's a seed. Pause it it's not already stopped or stopping
 						else if( d.isComplete() && d.getState() != Download.ST_STOPPED && d.getState() != Download.ST_STOPPING && ! d.isForceStart() && only)
@@ -534,6 +549,9 @@ public class SpeedSchedulerThread extends Thread implements ScheduleChangeListen
 			return;
 		try {
 			download.stop();
+			
+			download.setStopReason( "Speed Scheduler");
+			
 			addPausedDownload( download );
 		} catch( DownloadException e ) {
 			Log.println( "Error: Could not pause download: " + e.getMessage(), Log.ERROR );
@@ -731,6 +749,12 @@ public class SpeedSchedulerThread extends Thread implements ScheduleChangeListen
 
 	}
 
+	private void
+	isPausedTorrent(
+		Download	download )
+	{
+		download.setStopReason( "Speed Scheduler");
+	}
 	/**
 	 * Removes a download's hash from the persistent file of downloads
 	 * that we have paused.
