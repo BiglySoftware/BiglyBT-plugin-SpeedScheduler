@@ -24,6 +24,7 @@ public class BinaryScheduleIO implements ScheduleIO
 	protected Vector schedules = new Vector( 3 );
 	protected int defaultMaxUploadRate;
 	protected int defaultMaxDownloadRate;
+	protected boolean defaultsEnforce = true;
 	protected boolean schedulesLoaded = false;
 	
 	/**
@@ -46,7 +47,7 @@ public class BinaryScheduleIO implements ScheduleIO
      * @throws IOException
      */
     @Override
-    public void saveSchedules(Vector schedulesToSave, int defaultMaxUploadRate, int defaultMaxDownloadRate ) throws IOException
+    public void saveSchedules(Vector schedulesToSave, int defaultMaxUploadRate, int defaultMaxDownloadRate, boolean defaultsEnforce ) throws IOException
     {
     	Log.println( "SchedulePersistencyManager.saveSchedules()", Log.DEBUG );
         if( null == schedulesToSave )
@@ -54,7 +55,7 @@ public class BinaryScheduleIO implements ScheduleIO
         schedules = schedulesToSave;
         this.defaultMaxUploadRate = defaultMaxUploadRate;
         this.defaultMaxDownloadRate = defaultMaxDownloadRate;
-
+        this.defaultsEnforce = defaultsEnforce;
         // Write the schedules to disk using an ObjectOutputStream
         int numSchedules = schedules.size();
         FileOutputStream fos = new FileOutputStream( getSaveFileName() );
@@ -68,6 +69,7 @@ public class BinaryScheduleIO implements ScheduleIO
             oos.writeObject( schedules );
             oos.flush();
         }
+        oos.writeObject( new Boolean( defaultsEnforce ));
         oos.close();
         Log.println( "  Done saving schedules.", Log.DEBUG );
     }
@@ -82,7 +84,7 @@ public class BinaryScheduleIO implements ScheduleIO
     public void loadSchedules() throws IOException
     {
         Log.println( "SchedulePersistencyManager.loadSchedules()", Log.DEBUG );
-        Object objectRead = null;
+       ;
         schedules = new Vector();
         try {
             FileInputStream fis = new FileInputStream( getSaveFileName() );
@@ -92,6 +94,12 @@ public class BinaryScheduleIO implements ScheduleIO
             //int numSchedules = ((Integer)ois.readObject()).intValue();
             Log.println( "SchedulePersistencyManager: Loading schedules from file \"" + getSaveFileName() + "\"...", Log.DEBUG );
             schedules = (Vector) ois.readObject();
+            
+            try{
+            	defaultsEnforce = ((Boolean)ois.readObject()).booleanValue();
+            }catch( Throwable e ){
+            	// migration
+            }
         } catch( ClassCastException e  ) {
             // TODO Graphical notification of corrupt schedule file
             Log.println( "Problem with saved schedules file: " + e.getMessage(), Log.ERROR );
@@ -143,14 +151,12 @@ public class BinaryScheduleIO implements ScheduleIO
 			throw new SchedulesNotLoadedException();
 		return defaultMaxDownloadRate;
 	}
-
-	/* (non-Javadoc)
-	 * @see speedscheduler.io.ScheduleIO#saveDefaultSpeeds(int, int)
-	 */
+	
 	@Override
-	public void saveDefaultSpeeds(int defaultMaxUploadSpeed, int defaultMaxDownloadSpeed ) throws IOException
+	public boolean getDefaultsEnforce()
 	{
-		// TODO Auto-generated method stub
-		
+		if( ! schedulesLoaded )
+			throw new SchedulesNotLoadedException();
+		return defaultsEnforce;
 	}
 }

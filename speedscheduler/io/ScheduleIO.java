@@ -11,12 +11,12 @@ import java.util.Vector;
 */
 public interface ScheduleIO
 {
-	public void saveSchedules(Vector schedulesToSave, int defaultMaxUploadSpeed, int defaultMaxDownloadSpeed ) throws IOException;
-	public void saveDefaultSpeeds( int defaultMaxUploadSpeed, int defaultMaxDownloadSpeed ) throws IOException;
+	public void saveSchedules(Vector schedulesToSave, int defaultMaxUploadSpeed, int defaultMaxDownloadSpeed, boolean enforceDefaults ) throws IOException;
 	public void loadSchedules() throws IOException;
 	public Vector getSchedules();
 	public int getDefaultMaxUploadSpeed();
 	public int getDefaultMaxDownloadSpeed();
+	public boolean getDefaultsEnforce();
 }
 
 /**

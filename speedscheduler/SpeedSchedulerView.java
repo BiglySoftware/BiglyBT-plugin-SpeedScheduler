@@ -13,6 +13,7 @@ import org.eclipse.swt.events.PaintEvent;
 import org.eclipse.swt.events.PaintListener;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Cursor;
 import org.eclipse.swt.graphics.Font;
@@ -65,6 +66,8 @@ public class SpeedSchedulerView implements ScheduleSelectionChangeListener, UISW
     private SchedulePersistencyManager schedulePersistencyManager;
     private int defaultMaxUploadRate = 4;
     private int defaultMaxDownloadRate = 4;
+    private boolean defaultsEnforce = true;
+    
     private Vector allWidgets = new Vector(12);
     private IntegerInput defaultMaxUploadRateInput, defaultMaxDownloadRateInput;
     private Vector activeSchedules = new Vector();
@@ -187,6 +190,11 @@ public class SpeedSchedulerView implements ScheduleSelectionChangeListener, UISW
         final Group defaultSpeedComposite = new Group( mainComposite, 0 );
         defaultSpeedComposite.setText( "Default Speeds  (used when no schedule applies)" );
         //defaultRateComposite.setFont( new Font( parent.getDisplay(), "wordup", 10, SWT.BOLD ) );
+        
+        
+        
+        
+        
         
         final Button enableCheckbox = new Button( mainComposite, SWT.CHECK );
         enableCheckbox.setSelection( SpeedSchedulerPlugin.getInstance().isEnabled() );
@@ -351,7 +359,7 @@ public class SpeedSchedulerView implements ScheduleSelectionChangeListener, UISW
         
         // Default rates at the bottom
         GridLayout gridLayout = new GridLayout();
-        gridLayout.numColumns = 4;
+        gridLayout.numColumns = 5;
         gridLayout.marginHeight = 10;
         gridLayout.marginWidth = 10;
         //defaultRateComposite.setLayout( new RowLayout() );
@@ -375,14 +383,18 @@ public class SpeedSchedulerView implements ScheduleSelectionChangeListener, UISW
         imageGridData.verticalSpan = 2;
         defaultSpeedsImageComposite.setLayoutData( imageGridData );
         
+        defaultMaxUploadRate	= schedulePersistencyManager.getDefaultMaxUploadSpeed();
+        defaultMaxDownloadRate	= schedulePersistencyManager.getDefaultMaxDownloadSpeed();
+        defaultsEnforce			= schedulePersistencyManager.getDefaultsEnforce();
         
         new Label( defaultSpeedComposite, 0 ).setText( "Max upload: " );
         defaultMaxUploadRateInput = new IntegerInput( defaultSpeedComposite, SWT.BORDER );
-        defaultMaxUploadRateInput.setValue( schedulePersistencyManager.getDefaultMaxUploadSpeed());
+       
+        defaultMaxUploadRateInput.setValue( defaultMaxUploadRate );
         GridData uploadGridData = new GridData();
         uploadGridData.widthHint = 35;
         defaultMaxUploadRateInput.setLayoutData( uploadGridData );
-
+       
         defaultMaxUploadRateInput.addListener( SWT.FocusOut, new Listener() {
         	@Override
 	        public void handleEvent(Event e ) {
@@ -393,7 +405,7 @@ public class SpeedSchedulerView implements ScheduleSelectionChangeListener, UISW
                     defaultMaxUploadRate = defaultMaxUploadRateInput.getValue();
                     Log.println( "  Value is " + defaultMaxUploadRate, Log.DEBUG );
                     Log.println( "  Saving schedules and new default upload speed.", Log.DEBUG );
-                    schedulePersistencyManager.saveSchedules( schedules, defaultMaxUploadRate, defaultMaxDownloadRate );
+                    schedulePersistencyManager.saveSchedules( schedules, defaultMaxUploadRate, defaultMaxDownloadRate, defaultsEnforce );
                     //limitDownloadRateIfNeeded();
                 } catch( IOException ex ) {
                     errorMessageBox( "Could not save settings: " + ex.getMessage() );
@@ -403,9 +415,13 @@ public class SpeedSchedulerView implements ScheduleSelectionChangeListener, UISW
         new Label( defaultSpeedComposite, 0 ).setText( "kbytes/sec (for unlimited, use 0)   " );
         allWidgets.add( defaultMaxUploadRateInput );
         
+        
+        new Label( defaultSpeedComposite, SWT.NULL );
+        
         new Label( defaultSpeedComposite, 0 ).setText( "Max download: " );
         defaultMaxDownloadRateInput = new IntegerInput( defaultSpeedComposite, SWT.BORDER );
-        defaultMaxDownloadRateInput.setValue( schedulePersistencyManager.getDefaultMaxDownloadSpeed());
+      
+        defaultMaxDownloadRateInput.setValue( defaultMaxDownloadRate );
         GridData downloadGridData = new GridData();
         downloadGridData.widthHint = 35;
         defaultMaxDownloadRateInput.setLayoutData( downloadGridData );
@@ -415,7 +431,7 @@ public class SpeedSchedulerView implements ScheduleSelectionChangeListener, UISW
         		limitDownloadRateIfNeeded();
         		try {
                     defaultMaxDownloadRate = defaultMaxDownloadRateInput.getValue();
-                    schedulePersistencyManager.saveSchedules( schedules, defaultMaxUploadRate, defaultMaxDownloadRate );
+                    schedulePersistencyManager.saveSchedules( schedules, defaultMaxUploadRate, defaultMaxDownloadRate, defaultsEnforce );
                     //limitDownloadRateIfNeeded();
                 } catch( IOException ex ) {
                     errorMessageBox( "Could not save settings: " + ex.getMessage() );
@@ -424,6 +440,25 @@ public class SpeedSchedulerView implements ScheduleSelectionChangeListener, UISW
         });
         new Label( defaultSpeedComposite, 0 ).setText( "kbytes/sec (for unlimited, use 0)   " );
         allWidgets.add( defaultMaxDownloadRateInput );
+        
+        Button defaultEnforceInput = new Button( defaultSpeedComposite, SWT.CHECK );
+        defaultEnforceInput.setText( "Enforce default speed limits once applied" );
+        allWidgets.add( defaultEnforceInput );
+        
+        defaultEnforceInput.setSelection( defaultsEnforce );
+        defaultEnforceInput.addSelectionListener(
+        	new SelectionAdapter(){
+				
+				@Override
+				public void widgetSelected(SelectionEvent arg0){
+					defaultsEnforce 	= defaultEnforceInput.getSelection();
+					try{
+						schedulePersistencyManager.saveSchedules( schedules, defaultMaxUploadRate, defaultMaxDownloadRate, defaultsEnforce );
+					 } catch( IOException ex ) {
+		                    errorMessageBox( "Could not save settings: " + ex.getMessage() );
+		             }
+				}
+			});
         
         FormData defaultRateLayout = new FormData();
         defaultRateLayout.bottom = new FormAttachment( 100, 0 );        
@@ -687,7 +722,7 @@ public class SpeedSchedulerView implements ScheduleSelectionChangeListener, UISW
             return;
         schedules.set( i, newSchedule );
         try {
-            schedulePersistencyManager.saveSchedules( schedules, defaultMaxUploadRate, defaultMaxDownloadRate );
+            schedulePersistencyManager.saveSchedules( schedules, defaultMaxUploadRate, defaultMaxDownloadRate, defaultsEnforce );
         } catch( IOException e ) {
         	Log.println( "Error saving schedule: " + e.getMessage(), Log.ERROR );
         }
@@ -707,7 +742,7 @@ public class SpeedSchedulerView implements ScheduleSelectionChangeListener, UISW
         	Log.println( "Adding new Schedule to list and saving...", Log.DEBUG );
             schedules.add( newSchedule );
             try {
-                schedulePersistencyManager.saveSchedules( schedules, defaultMaxUploadRate, defaultMaxDownloadRate );
+                schedulePersistencyManager.saveSchedules( schedules, defaultMaxUploadRate, defaultMaxDownloadRate, defaultsEnforce );
             } catch( IOException e ) {
                 Log.println( "Error saving new schedule: " + e.getMessage(), Log.ERROR );
             }
@@ -727,7 +762,7 @@ public class SpeedSchedulerView implements ScheduleSelectionChangeListener, UISW
             return;
         schedules.remove( i );
         try {
-            schedulePersistencyManager.saveSchedules( schedules, defaultMaxUploadRate, defaultMaxDownloadRate );
+            schedulePersistencyManager.saveSchedules( schedules, defaultMaxUploadRate, defaultMaxDownloadRate, defaultsEnforce );
         } catch( IOException e ) {
             // TODO Graphical user notification
         	Log.println( "Error saving schedule: " + e.getMessage(), Log.ERROR );
@@ -747,7 +782,7 @@ public class SpeedSchedulerView implements ScheduleSelectionChangeListener, UISW
         Schedule s = (Schedule) schedules.get( i );
         s.toggleEnabledState();
         try {
-            schedulePersistencyManager.saveSchedules( schedules, defaultMaxUploadRate, defaultMaxDownloadRate );
+            schedulePersistencyManager.saveSchedules( schedules, defaultMaxUploadRate, defaultMaxDownloadRate, defaultsEnforce );
         } catch( IOException e ) {
             // TODO Graphical user notification
             Log.println( "Error saving schedule: " + e.getMessage(), Log.ERROR );

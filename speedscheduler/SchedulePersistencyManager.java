@@ -40,7 +40,10 @@ public class SchedulePersistencyManager
     {
         return scheduleIO.getDefaultMaxDownloadSpeed();    	
     }
-
+    public boolean getDefaultsEnforce()
+    {
+        return scheduleIO.getDefaultsEnforce();    	
+    }
     
     /**
      * Create a new SchedulePersistencyManager.
@@ -109,9 +112,9 @@ public class SchedulePersistencyManager
      * @param defaultMaxDownloadSpeed
      * @throws IOException
      */
-    public void saveSchedules( Vector schedulesToSave, int defaultMaxUploadSpeed, int defaultMaxDownloadSpeed ) throws IOException
+    public void saveSchedules( Vector schedulesToSave, int defaultMaxUploadSpeed, int defaultMaxDownloadSpeed, boolean enforce ) throws IOException
     {
-    	scheduleIO.saveSchedules( schedulesToSave, defaultMaxUploadSpeed, defaultMaxDownloadSpeed );
+    	scheduleIO.saveSchedules( schedulesToSave, defaultMaxUploadSpeed, defaultMaxDownloadSpeed, enforce );
     	
     	// Notify schedule listeners that schedules have been changed by the user.
         if( null == scheduleChangeListeners )
@@ -125,17 +128,13 @@ public class SchedulePersistencyManager
         	try {
         		listener.schedulesChanged( scheduleIO.getSchedules(),
         								   scheduleIO.getDefaultMaxUploadSpeed(),
-										   scheduleIO.getDefaultMaxDownloadSpeed() );
+										   scheduleIO.getDefaultMaxDownloadSpeed(),
+										   scheduleIO.getDefaultsEnforce());
         	} catch( Exception e ) {
         		Log.printStackTrace( e, Log.ERROR );
         	}
         }
     }
-    
-	public void saveDefaultSpeeds( int defaultMaxUploadSpeed, int defaultMaxDownloadSpeed ) throws IOException
-	{
-		scheduleIO.saveDefaultSpeeds( defaultMaxUploadSpeed, defaultMaxDownloadSpeed );
-	}
     
     public void loadSchedules() throws IOException
 	{

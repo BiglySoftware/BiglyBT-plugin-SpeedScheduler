@@ -42,18 +42,21 @@ public class XmlScheduleIO implements ScheduleIO
 	
 	private static final String INDENT = "   "; 
 	private int defaultMaxUploadRate, defaultMaxDownloadRate;
+	private boolean defaultsEnforce;
 	private Vector schedules;
 	
 	/** 
 	 * @see speedscheduler.io.ScheduleIO#saveSchedules(java.util.Vector, int, int)
 	 */
 	@Override
-	public void saveSchedules(Vector schedulesToSave, int defaultMaxUploadRate, int defaultMaxDownloadRate) throws IOException
+	public void saveSchedules(Vector schedulesToSave, int defaultMaxUploadRate, int defaultMaxDownloadRate, boolean defaultsEnforce) throws IOException
 	{
 		if( null == schedulesToSave )
 			throw new IllegalArgumentException( "Error: schedulesToSave parameter cannot be null!" );
 		this.defaultMaxUploadRate = defaultMaxUploadRate;
 		this.defaultMaxDownloadRate = defaultMaxDownloadRate;
+		this.defaultsEnforce = defaultsEnforce;
+		
 		this.schedules = schedulesToSave;
 		
 		StringBuffer s = new StringBuffer();
@@ -64,6 +67,8 @@ public class XmlScheduleIO implements ScheduleIO
 			.append( defaultMaxUploadRate )
 			.append( "\" download=\"" )
 			.append( defaultMaxDownloadRate )
+			.append( "\" enforce=\"" )
+			.append( defaultsEnforce?1:0 )
 			.append( "\"/>\n")
 			.append( INDENT )
 			.append( "<schedules>\n" );
@@ -84,15 +89,6 @@ public class XmlScheduleIO implements ScheduleIO
 		BufferedWriter writer = new BufferedWriter( new FileWriter( new File( getSaveFileName() ) ) );
 		writer.write( s.toString() );
 		writer.close();
-	}
-
-	/** 
-	 * @see speedscheduler.io.ScheduleIO#saveDefaultSpeeds(int, int)
-	 */
-	@Override
-	public void saveDefaultSpeeds(int defaultMaxUploadSpeed, int defaultMaxDownloadSpeed ) throws IOException
-	{
-		this.saveSchedules( this.schedules, defaultMaxUploadSpeed, defaultMaxDownloadSpeed );
 	}
 	
 	/**
@@ -235,6 +231,7 @@ public class XmlScheduleIO implements ScheduleIO
 		
 		defaultMaxDownloadRate = scheduleXmlHandler.getDefaultMaxDownloadRate();
 		defaultMaxUploadRate = scheduleXmlHandler.getDefaultMaxUploadRate();
+		defaultsEnforce = scheduleXmlHandler.getDefaultsEnforce();
 		schedules = scheduleXmlHandler.getSchedules();
 		schedulesLoaded = true;
 	}
@@ -315,6 +312,12 @@ public class XmlScheduleIO implements ScheduleIO
 		return defaultMaxDownloadRate;
 	}
 	
+	@Override
+	public boolean getDefaultsEnforce(){
+		
+		return defaultsEnforce;
+	}
+	
     /**
      * Helper function that tells us where to save the Schedules.
      */
@@ -328,6 +331,7 @@ public class XmlScheduleIO implements ScheduleIO
     	protected Vector schedules = new Vector( 3 );
     	protected int defaultMaxUploadRate;
     	protected int defaultMaxDownloadRate;
+    	protected boolean defaultsEnforce=true;
     	protected Schedule currentSchedule = null;
     	
 		/** Initialize.
@@ -353,6 +357,10 @@ public class XmlScheduleIO implements ScheduleIO
 			if( "defaultRates".equalsIgnoreCase( localName ) ) {
 				defaultMaxUploadRate = Integer.parseInt( attributes.getValue( "upload" ) );
 				defaultMaxDownloadRate = Integer.parseInt( attributes.getValue( "download" ) );
+				String enforce = attributes.getValue( "enforce" );
+				if ( enforce != null ){
+					defaultsEnforce = enforce.equals( "1" );
+				}
 			} else if( "schedule".equalsIgnoreCase( localName ) ) {
 				currentSchedule = new Schedule();
 				boolean enabled = ! "false".equalsIgnoreCase( attributes.getValue( "enabled" ) );
@@ -430,6 +438,11 @@ public class XmlScheduleIO implements ScheduleIO
 		public int getDefaultMaxDownloadRate()
 		{
 			return defaultMaxDownloadRate;
+		}
+		
+		public boolean getDefaultsEnforce()
+		{
+			return defaultsEnforce;
 		}
 		
 		public Vector getSchedules()

@@ -37,6 +37,10 @@ public class SpeedSchedulerThread extends Thread implements ScheduleChangeListen
 	 */
 	private int defaultMaxUploadRate = -1;
 	private int defaultMaxDownloadRate = -1;
+	private boolean defaultsEnforce = true;
+	private boolean nonDefaultUploadSet	= true;
+	private boolean nonDefaultDownloadSet = true;
+	
 	private static final int DEFAULT_SLEEP_TIME = 60*1000;
 	private static final int MIN_SLEEP_TIME = 1000;
 	/**
@@ -95,6 +99,7 @@ public class SpeedSchedulerThread extends Thread implements ScheduleChangeListen
 		schedules = schedulePersistencyManager.getSchedules();
 		defaultMaxUploadRate = schedulePersistencyManager.getDefaultMaxUploadSpeed();
 		defaultMaxDownloadRate = schedulePersistencyManager.getDefaultMaxDownloadSpeed();
+		defaultsEnforce = schedulePersistencyManager.getDefaultsEnforce();
 	}
 
 	public static SpeedSchedulerThread getInstance()
@@ -440,6 +445,7 @@ public class SpeedSchedulerThread extends Thread implements ScheduleChangeListen
 
 				// Choose a new max upload rate if necessary
 				if( maxUploadRateChosen > -1 ) {
+					nonDefaultUploadSet = true;
 					Log.println( "Current upload rate: " + speedSchedulerPlugin.getEffectiveMaxUploadSpeed(), Log.DEBUG );
 
 
@@ -453,16 +459,25 @@ public class SpeedSchedulerThread extends Thread implements ScheduleChangeListen
                         Log.println( "SpeedSchedule: Schedule matches but upload rate already set.", Log.DEBUG );
 
                     }
-				} else if( speedSchedulerPlugin.getEffectiveMaxUploadSpeed() != defaultMaxUploadRate ) {
-
-					speedSchedulerPlugin.setEffectiveMaxUploadSpeed( defaultMaxUploadRate );
-
-				} else {
-					Log.println( "SpeedScheduler: No change to upload rate this time.", Log.DEBUG );
+				}else{
+					
+					if ( nonDefaultUploadSet || defaultsEnforce ){
+						
+						nonDefaultUploadSet = false;
+						
+						if( speedSchedulerPlugin.getEffectiveMaxUploadSpeed() != defaultMaxUploadRate ) {
+						
+							speedSchedulerPlugin.setEffectiveMaxUploadSpeed( defaultMaxUploadRate );
+							
+						} else {
+							Log.println( "SpeedScheduler: No change to upload rate this time.", Log.DEBUG );
+						}
+					}
 				}
 
 				// Choose a new max download rate if necessary
 				if( maxDownloadRateChosen > -1 ) {
+					nonDefaultDownloadSet = true;
 					Log.println( "Current download rate: " + speedSchedulerPlugin.getAzureusGlobalDownloadSpeed(), Log.DEBUG );
 					if( speedSchedulerPlugin.getAzureusGlobalDownloadSpeed() != maxDownloadRateChosen ) {
 						Log.println( "SpeedScheduler: Changing download rate to " + maxDownloadRateChosen, Log.DEBUG );
@@ -471,12 +486,21 @@ public class SpeedSchedulerThread extends Thread implements ScheduleChangeListen
 					} else {
 						Log.println( "SpeedSchedule: Schedule matches but download rate already set.", Log.DEBUG );
 					}
-				} else if( speedSchedulerPlugin.getAzureusGlobalDownloadSpeed() != defaultMaxDownloadRate ) {
-					Log.println( "SpeedScheduler: Changing download rate to default: " + defaultMaxDownloadRate, Log.DEBUG );
-					//pluginConfig.setIntParameter( maxDownloadSpeedParam, defaultMaxDownloadRate );
-					speedSchedulerPlugin.setAzureusGlobalDownloadSpeed( defaultMaxDownloadRate );
-				} else {
-					Log.println( "SpeedScheduler: No change to download rate this time.", Log.DEBUG );
+				}else{
+					
+					if ( nonDefaultDownloadSet || defaultsEnforce ){
+						
+						nonDefaultDownloadSet = false;
+					
+						if( speedSchedulerPlugin.getAzureusGlobalDownloadSpeed() != defaultMaxDownloadRate ) {
+								
+							Log.println( "SpeedScheduler: Changing download rate to default: " + defaultMaxDownloadRate, Log.DEBUG );
+							//pluginConfig.setIntParameter( maxDownloadSpeedParam, defaultMaxDownloadRate );
+							speedSchedulerPlugin.setAzureusGlobalDownloadSpeed( defaultMaxDownloadRate );
+						} else {
+							Log.println( "SpeedScheduler: No change to download rate this time.", Log.DEBUG );
+						}
+					}
 				}		
 			} catch( Exception e ) {
 				// Catch and ignore all exceptions to prevent this thread from ever dying
@@ -842,15 +866,17 @@ public class SpeedSchedulerThread extends Thread implements ScheduleChangeListen
 	 * Called by the SchedulePersistencyManager whenever the user changes the schedules.
 	 */
 	@Override
-	public void schedulesChanged(Vector newSchedules, int newDefaultMaxUploadRate, int newDefaultMaxDownloadRate )
+	public void schedulesChanged(Vector newSchedules, int newDefaultMaxUploadRate, int newDefaultMaxDownloadRate, boolean newDefaultsEnforce )
 	{
 		Log.println( "SpeedSchedulerThread.schedulesChanged()", Log.DEBUG );
 		Log.println( "   new default up rate:   " + newDefaultMaxUploadRate, Log.DEBUG );
 		Log.println( "   new default down rate: " + newDefaultMaxDownloadRate, Log.DEBUG );
+		Log.println( "   new defaults enforce: " + newDefaultsEnforce, Log.DEBUG );
 		synchronized( schedules ) {
 			schedules = newSchedules;
 			this.defaultMaxUploadRate = newDefaultMaxUploadRate;
 			this.defaultMaxDownloadRate = newDefaultMaxDownloadRate;
+			this.defaultsEnforce = newDefaultsEnforce;
 		}
 		runningThread.interrupt();
 	}

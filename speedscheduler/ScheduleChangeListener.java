@@ -15,5 +15,5 @@ public interface ScheduleChangeListener
 	 * @param defaultMaxUploadRate The new default max upload rate
 	 * @param defaultMaxDownloadRate The new default max download rate
 	 */
-	public void schedulesChanged( Vector schedules, int defaultMaxUploadRate, int defaultMaxDownloadRate );
+	public void schedulesChanged( Vector schedules, int defaultMaxUploadRate, int defaultMaxDownloadRate, boolean enforce );
 }
