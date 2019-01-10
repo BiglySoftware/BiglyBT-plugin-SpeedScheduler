@@ -9,6 +9,8 @@ import com.biglybt.pif.ui.config.ParameterListener;
 import com.biglybt.pif.ui.config.PluginConfigUIFactory;
 
 import com.biglybt.pif.ui.*;
+import com.biglybt.pif.ui.model.BasicPluginConfigModel;
+
 import com.biglybt.ui.swt.pif.*;
 
 /**
@@ -52,20 +54,21 @@ public class SpeedSchedulerPlugin implements Plugin
      * In our case, it'll simply store the pluginInterface reference
      * and register our PluginView.
      */
-    @Override
-    public void initialize(final PluginInterface pluginInterface )
-    {
+	@Override
+	public void initialize(final PluginInterface pluginInterface )
+	{
     	speedSchedulerPlugin = this;
         this.pluginInterface = pluginInterface;
         this.pluginConfig = this.pluginInterface.getPluginconfig();
 
         // Setup the SpeedScheduler config page:
-		PluginConfigUIFactory factory = pluginInterface.getPluginConfigUIFactory();
+		BasicPluginConfigModel configModel = pluginInterface.getUIManager().createBasicPluginConfigModel("speedscheduler.config.title");
+
 		int i = 0;
 		Parameter parameters[] = new Parameter[11];
 
 		// Schedules, sleeping, and stuff:
-		parameters[++i] = factory.createIntParameter( "thread.sleep.time", 
+		parameters[++i] = configModel.addIntParameter2( "thread.sleep.time",
 				"speedscheduler.thread.sleep.time", 10000 );
 		parameters[i].addListener( new ParameterListener() {
 			@Override
@@ -74,17 +77,17 @@ public class SpeedSchedulerPlugin implements Plugin
 					speedSchedulerThread.interrupt();
 			}
 		});
-		parameters[++i] = factory.createIntParameter( "time.display", 
-				"speedscheduler.time.display", 12, new int[] { 12, 24 }, 
-				new String[] { "12-hour (5:00pm)", "24-hour (17:00)" } );
-		parameters[++i] = factory.createIntParameter( "minutes.granularity",
+		parameters[++i] = configModel.addIntListParameter2( "time.display",
+				"speedscheduler.time.display", new int[] { 12, 24 },
+				new String[] { "12-hour (5:00pm)", "24-hour (17:00)" }, 12 );
+		parameters[++i] = configModel.addIntParameter2( "minutes.granularity",
 				"speedscheduler.minutes.granularity", 15 );
 		
-		parameters[++i] = factory.createBooleanParameter( "use.tags.not.cats",
+		parameters[++i] = configModel.addBooleanParameter2( "use.tags.not.cats",
 				"speedscheduler.use.tags.not.cats", DEFAULT_USE_TAGS_NOT_CATS );
 
 		// Logging:
-		parameters[++i] = factory.createFileParameter( "log.file", 
+		parameters[++i] = configModel.addFileParameter2( "log.file",
 				"speedscheduler.log.file", "" );
 				//getPluginDirectoryName() + File.separator + "SpeedScheduler.log" );
 		parameters[i].addListener( new ParameterListener() {
@@ -93,10 +96,10 @@ public class SpeedSchedulerPlugin implements Plugin
 				Log.setFile( getConfigParameter( "log.file", Log.DEFAULT_LOG_FILE ) );
 			}
 		});
-		parameters[++i] = factory.createIntParameter("log.level",
-				"speedscheduler.log.level", Log.ERROR,
+		parameters[++i] = configModel.addIntListParameter2("log.level",
+				"speedscheduler.log.level",
 				new int[] { Log.DEBUG, Log.INFO, Log.ERROR, Log.NONE },
-				new String[] { "Debug", "Information", "Errors", "Nothing" }  );
+				new String[] { "Debug", "Information", "Errors", "Nothing" }, Log.ERROR );
 		parameters[i].addListener( new ParameterListener( ) {
 			@Override
 			public void parameterChanged(Parameter p ) {
@@ -105,13 +108,10 @@ public class SpeedSchedulerPlugin implements Plugin
 		});
     	
 		// XML Parsing:
-		parameters[++i] = factory.createStringParameter( "sax.parser",
+		parameters[++i] = configModel.addStringParameter2( "sax.parser",
 				"speedscheduler.sax.parser", "" );
 
-		// Add these parameters to the UI config section
-		pluginInterface.addConfigUIParameters( parameters, "speedscheduler.config.title" );
-		
-//		
+//
 //		ERROR -> DEBUG
 //		
 //		
