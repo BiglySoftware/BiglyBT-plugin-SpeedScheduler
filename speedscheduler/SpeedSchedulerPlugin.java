@@ -6,7 +6,6 @@ import com.biglybt.pif.PluginException;
 import com.biglybt.pif.PluginInterface;
 import com.biglybt.pif.ui.config.Parameter;
 import com.biglybt.pif.ui.config.ParameterListener;
-import com.biglybt.pif.ui.config.PluginConfigUIFactory;
 
 import com.biglybt.pif.ui.*;
 import com.biglybt.pif.ui.model.BasicPluginConfigModel;
