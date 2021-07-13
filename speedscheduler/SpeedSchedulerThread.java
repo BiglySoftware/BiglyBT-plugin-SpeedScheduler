@@ -7,6 +7,7 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -183,9 +184,9 @@ public class SpeedSchedulerThread extends Thread implements ScheduleChangeListen
 				boolean downloadsPaused = false;
 				boolean seedsPaused = false;
 
-				Vector categoryExclude = new Vector();
-				Vector categoryOnly = new Vector();
-				Vector schedulesChosen = new Vector(2);
+				Vector<String> categoryExclude = new Vector<>();
+				Vector<String[]> categoryOnly = new Vector<>();
+				Vector<Schedule> schedulesChosen = new Vector<>(2);
 
 				// Prevent the schedulesChanged() method from writing the vector 
 				// while we are reading from it (the Iterator will barf if that
@@ -305,13 +306,13 @@ public class SpeedSchedulerThread extends Thread implements ScheduleChangeListen
 
 						//Do we have a 'Not in'?
 						boolean not_in = false;
-						String torrent_cat = getDownloadCatOrTag( use_tags, torrent_categories, tag_manager, d );
+						List<String> torrent_cats = getDownloadCatOrTags( use_tags, torrent_categories, tag_manager, d );
 						
-						Iterator ex = categoryExclude.iterator();
+						Iterator<String> ex = categoryExclude.iterator();
 						
 						while(ex.hasNext())
 						{
-							if(torrent_cat.compareTo((String) ex.next())==0)
+							if( torrent_cats.contains( ex.next()))
 							{
 								not_in = true;
 							}
@@ -339,14 +340,14 @@ public class SpeedSchedulerThread extends Thread implements ScheduleChangeListen
 
 						//Do we have a in?
 						boolean in = false;
-						String torrent_cat = getDownloadCatOrTag( use_tags, torrent_categories, tag_manager, d );
+						List<String> torrent_cats = getDownloadCatOrTags( use_tags, torrent_categories, tag_manager, d );
 						
 						Iterator on = categoryOnly.iterator();
 						while(on.hasNext())
 						{
 							String[] compare = (String[])on.next();
 							//If category matches and downloadPause Ticked then pause
-							if(torrent_cat.compareTo(compare[0])==0 && "true".equalsIgnoreCase(compare[1]))
+							if(torrent_cats.contains(compare[0]) && "true".equalsIgnoreCase(compare[1]))
 							{
 								in = true;
 							}
@@ -375,12 +376,12 @@ public class SpeedSchedulerThread extends Thread implements ScheduleChangeListen
 						Download d = torrents[i];
 //						Do we have a not in?
 						boolean not_in = false;
-						String torrent_cat = getDownloadCatOrTag( use_tags, torrent_categories, tag_manager, d );
+						List<String> torrent_cats = getDownloadCatOrTags( use_tags, torrent_categories, tag_manager, d );
 						
 						Iterator ex = categoryExclude.iterator();
 						while(ex.hasNext())
 						{
-							if(torrent_cat.compareTo((String) ex.next())==0)
+							if(torrent_cats.contains( ex.next()))
 							{
 								not_in = true;
 							}
@@ -410,14 +411,14 @@ public class SpeedSchedulerThread extends Thread implements ScheduleChangeListen
 
 //						Do we have a Only?
 						boolean only = false;
-						String torrent_cat = getDownloadCatOrTag( use_tags, torrent_categories, tag_manager, d );
+						List<String> torrent_cats = getDownloadCatOrTags( use_tags, torrent_categories, tag_manager, d );
 						
 						Iterator on = categoryOnly.iterator();
 						while(on.hasNext())
 						{
 							String[] compare = (String[])on.next();
 							//If category matches and downloadPause Ticked then pause
-							if(torrent_cat.compareTo(compare[0])==0 && "true".equalsIgnoreCase(compare[2]))
+							if(torrent_cats.contains(compare[0]) && "true".equalsIgnoreCase(compare[2]))
 							{
 								only = true;
 							}
@@ -512,46 +513,33 @@ public class SpeedSchedulerThread extends Thread implements ScheduleChangeListen
 
 	}
 
-	private String
-	getDownloadCatOrTag(
+	private List<String>
+	getDownloadCatOrTags(
 		boolean				use_tags,
 		TorrentAttribute	torrent_categories,
 		TagManager			tag_manager,
 		Download			d )
 	{
+		List<String>	result = new ArrayList<>();
+		
 		if ( use_tags ){
 			
 			List<Tag> tags = tag_manager.getTagsForTaggable( TagType.TT_DOWNLOAD_MANUAL, PluginCoreUtils.unwrap( d ));
 			
-			if ( tags.size() == 0 ){
+			for ( Tag t: tags ){
 				
-				return( "" );
-				
-			}else if ( tags.size() == 1 ){
-				
-				return( tags.get(0).getTagName( true ));
-				
-			}else{
-				
-				Collections.sort(
-					tags,
-					new Comparator<Tag>()
-					{
-						@Override
-						public int compare(Tag o1, Tag o2) {
-							return( o1.getTagName( true ).compareTo( o2.getTagName( true )));
-						}
-					});
-				
-				return( tags.get(0).getTagName( true ));
+				result.add( t.getTagName( true ));
 			}
+			
 		}else{
 			String torrent_cat = d.getAttribute(torrent_categories);
 			
 			if (torrent_cat==null) torrent_cat = "Uncategorized";
 			
-			return( torrent_cat );
+			result.add( torrent_cat );
 		}
+		
+		return( result );
 	}
 	
 
@@ -580,17 +568,21 @@ public class SpeedSchedulerThread extends Thread implements ScheduleChangeListen
 		if( download.getState() == Download.ST_STOPPED ||
 				download.getState() == Download.ST_STOPPING )
 			return;
-		try {
-			download.stop();
+		//try {
+			// download.stop();
+			
+			download.pause();	// PARG: switched to using pause/resume
 			
 			download.setStopReason( "Speed Scheduler");
 			
 			addPausedDownload( download );
+		/*
 		} catch( DownloadException e ) {
 			Log.println( "Error: Could not pause download: " + e.getMessage(), Log.ERROR );
 			Log.printStackTrace( e, Log.ERROR );
 			// Do nothing, download is not persisted.
-		}    	
+		} 
+		*/   	
 	}
 
 	/**
@@ -769,7 +761,11 @@ public class SpeedSchedulerThread extends Thread implements ScheduleChangeListen
 				download.getState() != Download.ST_READY &&
 				download.getState() != Download.ST_SEEDING ) {
 			try {
-				download.restart();
+				if ( download.isPaused()){
+					download.resume();
+				}else{
+					download.restart();
+				}
 				removePausedDownload( download );
 			} catch( DownloadException e ) {
 				Log.println( "Warning: Could not unpause download:\n  " + e.getMessage(), Log.WARN );
