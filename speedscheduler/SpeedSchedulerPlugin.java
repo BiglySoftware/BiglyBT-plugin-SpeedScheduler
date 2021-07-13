@@ -45,6 +45,7 @@ public class SpeedSchedulerPlugin implements Plugin
     private static final String BUILT_IN_AUTO_SPEED_MAX_UPLOAD_CONFIG_VAR = "AutoSpeed Max Upload KBs";
 
     private static final boolean DEFAULT_USE_TAGS_NOT_CATS	= false;
+    private static final boolean DEFAULT_OVERRIDE_FORCED	= false;
     
     
 
@@ -64,7 +65,7 @@ public class SpeedSchedulerPlugin implements Plugin
 		BasicPluginConfigModel configModel = pluginInterface.getUIManager().createBasicPluginConfigModel("speedscheduler.config.title");
 
 		int i = 0;
-		Parameter parameters[] = new Parameter[11];
+		Parameter parameters[] = new Parameter[12];
 
 		// Schedules, sleeping, and stuff:
 		parameters[++i] = configModel.addIntParameter2( "thread.sleep.time",
@@ -84,6 +85,9 @@ public class SpeedSchedulerPlugin implements Plugin
 		
 		parameters[++i] = configModel.addBooleanParameter2( "use.tags.not.cats",
 				"speedscheduler.use.tags.not.cats", DEFAULT_USE_TAGS_NOT_CATS );
+		
+		parameters[++i] = configModel.addBooleanParameter2( "override.forced",
+				"speedscheduler.override.forced", DEFAULT_OVERRIDE_FORCED );
 
 		// Logging:
 		parameters[++i] = configModel.addFileParameter2( "log.file",
@@ -290,6 +294,12 @@ public class SpeedSchedulerPlugin implements Plugin
     getUseTagsNotCategories()
     {
     	return( pluginConfig.getPluginBooleanParameter( "use.tags.not.cats", DEFAULT_USE_TAGS_NOT_CATS ));
+    }
+    
+    public boolean
+    getOverrideForced()
+    {
+    	return( pluginConfig.getPluginBooleanParameter( "override.forced", DEFAULT_OVERRIDE_FORCED ));
     }
 
 	/**
